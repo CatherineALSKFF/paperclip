@@ -28,31 +28,35 @@ Follow these steps every time you wake up:
 
 **Step 3 — Get assignments.** Use `GET /api/agents/me/inbox-lite` for the compact assignment list. Fall back to `GET /api/companies/{companyId}/issues?assigneeAgentId={your-agent-id}&status=todo,in_progress,blocked` only when you need full issue objects.
 
-**Step 4 — Pick work.** Work on `in_progress` first, then `todo`. Skip `blocked` unless you can unblock it.
-**Blocked-task dedup:** If your most recent comment on a blocked task was a blocked-status update AND no new comments exist since, skip it entirely. Only re-engage when new context exists.
+**Step 4 — Pick and prioritize work.** Build a work queue from your inbox: `in_progress` first, then `todo`. Skip `blocked` unless you can unblock it.
+**Blocked-task dedup:** If your most recent comment on a blocked task was a blocked-status update AND no new comments exist since, skip it entirely.
 If `PAPERCLIP_TASK_ID` is set and assigned to you, prioritize it first.
 If `PAPERCLIP_WAKE_COMMENT_ID` is set, read that comment thread first. Self-assign only if the comment explicitly asks you to take the task (use checkout, never direct assignee patch). If nothing is assigned and no valid mention handoff, exit the heartbeat.
 
-**Step 5 — Checkout.** You MUST checkout before doing any work:
+**Step 5 — Process ALL tasks (drain the queue).** For each task in your work queue, repeat Steps 5a-5e. Do NOT exit after one task if more work remains.
+
+**Step 5a — Checkout.** You MUST checkout before doing any work:
 ```
 POST /api/issues/{issueId}/checkout
 Headers: X-Paperclip-Run-Id: $PAPERCLIP_RUN_ID
 { "agentId": "{your-agent-id}", "expectedStatuses": ["todo", "backlog", "blocked"] }
 ```
-If owned by another agent: `409 Conflict` — stop, pick a different task. **Never retry a 409.**
+If owned by another agent: `409 Conflict` — skip this task, move to the next one. **Never retry a 409.**
 
-**Step 6 — Understand context.** Use `GET /api/issues/{issueId}/heartbeat-context` for compact state. Use comments incrementally: fetch specific comment via `GET /api/issues/{issueId}/comments/{commentId}`, or deltas via `?after={last-seen-comment-id}&order=asc`. Only load full thread when cold-starting.
+**Step 5b — Understand context.** Use `GET /api/issues/{issueId}/heartbeat-context` for compact state. Use comments incrementally: fetch specific comment via `GET /api/issues/{issueId}/comments/{commentId}`, or deltas via `?after={last-seen-comment-id}&order=asc`. Only load full thread when cold-starting.
 
-**Step 7 — Do the work.** Use your tools and capabilities.
+**Step 5c — Do the work.** Use your tools and capabilities.
 
-**Step 8 — Update status and communicate.** Always include the run ID header.
+**Step 5d — Update status and communicate.** Always include the run ID header.
 ```
 PATCH /api/issues/{issueId}  { "status": "done", "comment": "What was done." }
 PATCH /api/issues/{issueId}  { "status": "blocked", "comment": "What is blocked and who needs to act." }
 ```
 Status values: `backlog`, `todo`, `in_progress`, `in_review`, `done`, `blocked`, `cancelled`. Priority: `critical`, `high`, `medium`, `low`.
 
-**Step 9 — Delegate if needed.** Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId` and `goalId`.
+**Step 5e — Delegate if needed.** Create subtasks with `POST /api/companies/{companyId}/issues`. Always set `parentId` and `goalId`.
+
+**Step 6 — Check for more work.** After completing a task, re-check your inbox (`GET /api/agents/me/inbox-lite`). If new tasks appeared while you were working, process them too. Only exit when your inbox is empty or all remaining tasks are blocked with no new context.
 
 ## Critical Rules
 

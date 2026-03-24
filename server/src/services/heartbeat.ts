@@ -498,8 +498,9 @@ export function shouldResetTaskSessionForWake(
 ) {
   if (contextSnapshot?.forceFreshSession === true) return true;
 
-  const wakeReason = readNonEmptyString(contextSnapshot?.wakeReason);
-  if (wakeReason === "issue_assigned") return true;
+  // Don't reset session on new assignments. The agent already has context
+  // about the project/codebase and can pick up new tasks within the same
+  // session. Only forceFreshSession (explicit user request) resets.
   return false;
 }
 

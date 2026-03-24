@@ -378,8 +378,13 @@ export async function listPaperclipSkillEntries(
         key: `paperclipai/paperclip/${entry.name}`,
         runtimeName: entry.name,
         source: path.join(root, entry.name),
-        required: true,
-        requiredReason: "Bundled Paperclip skills are always available for local adapters.",
+        // Only the core "paperclip" skill is required by default.
+        // Other bundled skills (create-agent, create-plugin, etc.) are opt-in
+        // via desiredSkills config to reduce per-heartbeat context size.
+        required: entry.name === "paperclip",
+        requiredReason: entry.name === "paperclip"
+          ? "Core Paperclip heartbeat skill is required for agent operation."
+          : undefined,
       }));
   } catch {
     return [];

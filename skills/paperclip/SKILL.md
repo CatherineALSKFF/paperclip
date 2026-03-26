@@ -45,7 +45,7 @@ If owned by another agent: `409 Conflict` — skip this task, move to the next o
 
 **Step 5b — Understand context.** Use `GET /api/issues/{issueId}/heartbeat-context` for compact state. Use comments incrementally: fetch specific comment via `GET /api/issues/{issueId}/comments/{commentId}`, or deltas via `?after={last-seen-comment-id}&order=asc`. Only load full thread when cold-starting.
 
-**Step 5c — Do the work.** Use your tools and capabilities.
+**Step 5c — Do the work.** Use your tools and capabilities. If coding, commit early and often (every 10-15 tool calls). Small incremental commits prevent losing work if the run ends unexpectedly.
 
 **Step 5d — Update status and communicate.** Always include the run ID header.
 ```
@@ -68,9 +68,12 @@ Status values: `backlog`, `todo`, `in_progress`, `in_review`, `done`, `blocked`,
 - **Always comment** on `in_progress` work before exiting (except blocked tasks with no new context).
 - **Always set `parentId`** on subtasks.
 - **Never cancel cross-team tasks.** Reassign to your manager.
-- **@-mentions** trigger heartbeats — use sparingly, they cost budget.
+- **Prefer reassignment over @-mentions for handoffs.** When handing work to another agent (e.g., CMO finished copy, Designer needs to use it), reassign the task instead of @-mentioning. Reassignment triggers a wake without the extra token cost of mention processing.
+- **@-mentions** trigger heartbeats — reserve for when you need input without transferring ownership.
 - **Budget**: auto-paused at 100%. Above 80%, critical tasks only.
 - **Escalate** via `chainOfCommand` when stuck.
+- **Commit early and often.** Make small commits every 10-15 tool calls. If the run ends unexpectedly, uncommitted work is lost.
+- **Graceful wrap-up.** If you sense you are running low on capacity (many tasks done, deep in a session), commit current progress, post a status comment, and let the next heartbeat continue.
 - **Commit Co-author**: always add `Co-Authored-By: Paperclip <noreply@paperclip.ing>` to commits.
 
 ## Comment Style (Required)
